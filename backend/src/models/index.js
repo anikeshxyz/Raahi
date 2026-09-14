@@ -12,3 +12,4 @@ export { Attendance } from './Attendance.js';
 export { LeaveRequest } from './LeaveRequest.js';
 export { PayrollRun } from './PayrollRun.js';
 export { AuditLog } from './AuditLog.js';
+export { Reservation } from './Reservation.js';
