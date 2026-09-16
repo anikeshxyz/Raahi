@@ -7,7 +7,8 @@ import {
   Users, 
   BarChart3, 
   LogOut,
-  CookingPot
+  CookingPot,
+  Truck
 } from 'lucide-react';
 
 export const Sidebar = () => {
@@ -15,6 +16,7 @@ export const Sidebar = () => {
     { to: '/pos', label: 'POS & Tables', icon: UtensilsCrossed },
     { to: '/kot', label: 'KDS / Kitchen', icon: CookingPot },
     { to: '/inventory', label: 'Inventory & Recipes', icon: Package },
+    { to: '/purchase', label: 'Purchase & Vendors', icon: Truck },
     { to: '/employees', label: 'Staff & Attendance', icon: Users },
     { to: '/reports', label: 'Sales & Reports', icon: BarChart3 },
   ];

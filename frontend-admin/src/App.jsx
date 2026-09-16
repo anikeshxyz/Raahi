@@ -5,6 +5,7 @@ import { Login } from './pages/Login';
 import { POSDashboard } from './pages/pos/POSDashboard';
 import { KOTDashboard } from './pages/kot/KOTDashboard';
 import { InventoryDashboard } from './pages/inventory/InventoryDashboard';
+import { PurchaseDashboard } from './pages/purchase/PurchaseDashboard';
 import { EmployeeDashboard } from './pages/employees/EmployeeDashboard';
 import { ReportsDashboard } from './pages/reports/ReportsDashboard';
 
@@ -18,6 +19,7 @@ function App() {
           <Route path="pos" element={<POSDashboard />} />
           <Route path="kot" element={<KOTDashboard />} />
           <Route path="inventory" element={<InventoryDashboard />} />
+          <Route path="purchase" element={<PurchaseDashboard />} />
           <Route path="employees" element={<EmployeeDashboard />} />
           <Route path="reports" element={<ReportsDashboard />} />
         </Route>

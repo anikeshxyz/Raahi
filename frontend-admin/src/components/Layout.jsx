@@ -7,6 +7,7 @@ const titlesMap = {
   '/pos': 'Point of Sale & Live Tables',
   '/kot': 'Kitchen Order Tickets & KDS',
   '/inventory': 'Inventory Management & Recipe Mapping',
+  '/purchase': 'Purchase & Supplier Management (SRS §7)',
   '/employees': 'Staff Management, Attendance & Leaves',
   '/reports': 'Executive Reports & Business Analytics',
 };
