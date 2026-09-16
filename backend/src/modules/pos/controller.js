@@ -23,6 +23,10 @@ import {
   defaultMenuItemsData,
   seedInitialMenu,
 } from '../../seeds/menuSeed.js';
+import {
+  deductStockForOrder,
+  restoreStockForOrder,
+} from '../inventory/controller.js';
 
 // In-memory fallback stores when MongoDB is not connected (e.g. unit testing / offline dev)
 let memTables = defaultTablesData.map((t, idx) => ({
@@ -291,6 +295,9 @@ export const createOrder = async (req, res, next) => {
         await targetTable.save();
       }
 
+      // Automatically deduct stock via recipe mapping on POS sale
+      await deductStockForOrder(processedItems);
+
       return res.status(201).json({
         success: true,
         message: 'Order created successfully',
@@ -334,6 +341,9 @@ export const createOrder = async (req, res, next) => {
       targetTable.status = 'occupied';
       targetTable.currentOrderId = orderId;
     }
+
+    // Automatically deduct stock in-memory via recipe mapping
+    await deductStockForOrder(processedItems);
 
     res.status(201).json({
       success: true,
@@ -867,6 +877,9 @@ export const cancelOrder = async (req, res, next) => {
         });
       }
 
+      // Restore recipe stock on cancelled order
+      await restoreStockForOrder(order.items, validated.reason);
+
       await order.save();
 
       await logAuditTrail({
@@ -918,6 +931,9 @@ export const cancelOrder = async (req, res, next) => {
         table.currentOrderId = null;
       }
     }
+
+    // Restore recipe stock in-memory
+    await restoreStockForOrder(order.items, validated.reason);
 
     memAuditLogs.push({
       actorRole: 'Cashier',
