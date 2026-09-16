@@ -44,6 +44,8 @@ export const resetMemStore = () => {
   memAuditLogs = [];
 };
 
+export const getMemOrders = () => memOrders;
+export const getMemTables = () => memTables;
 export const getMemAuditLogs = () => memAuditLogs;
 
 // Helper to generate a unique order number: ORD-YYYYMMDD-XXXX
