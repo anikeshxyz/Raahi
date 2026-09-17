@@ -10,7 +10,7 @@ export const Navbar = ({ title }) => {
       <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
         <div className="status-pill">
           <Sparkles size={14} style={{ display: 'inline', marginRight: 4, verticalAlign: 'middle' }} />
-          System Active • Phase 0
+          System Active • v1.0.0 (All Phases Complete)
         </div>
         <button 
           style={{ 
