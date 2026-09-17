@@ -73,29 +73,44 @@ export const HeaderNav = () => {
         </div>
       </header>
 
-      {/* Mobile Drawer */}
+      {/* Mobile Drawer with Backdrop */}
       {isOpen && (
-        <div className="mobile-drawer">
-          {NAV_LINKS.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className="drawer-link"
-              onClick={closeMenu}
-            >
-              {link.label}
-            </Link>
-          ))}
-          <Link
-            href="/reservation"
-            className="nav-cta"
-            style={{ textAlign: 'center', marginTop: '16px', justifyContent: 'center' }}
-            onClick={closeMenu}
-          >
-            <CalendarCheck size={18} />
-            <span>Reserve a Table</span>
-          </Link>
-        </div>
+        <>
+          <div className="mobile-drawer-backdrop" onClick={closeMenu} aria-hidden="true" />
+          <div className="mobile-drawer">
+            <div className="mobile-drawer-header">
+              <span className="badge-tag">Raahi Experience</span>
+            </div>
+
+            <div className="drawer-links-group">
+              {NAV_LINKS.map((link) => {
+                const isActive = pathname === link.href;
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className={`drawer-link ${isActive ? 'active' : ''}`}
+                    onClick={closeMenu}
+                  >
+                    <span>{link.label}</span>
+                    <span className="drawer-arrow">→</span>
+                  </Link>
+                );
+              })}
+            </div>
+
+            <div className="drawer-footer-cta">
+              <Link
+                href="/reservation"
+                className="nav-cta drawer-reserve-btn"
+                onClick={closeMenu}
+              >
+                <CalendarCheck size={18} />
+                <span>Reserve a Table</span>
+              </Link>
+            </div>
+          </div>
+        </>
       )}
     </>
   );
