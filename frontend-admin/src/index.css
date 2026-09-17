@@ -508,6 +508,15 @@ a {
   border-color: #f59e0b;
 }
 
+.table-card-reserved {
+  border-color: rgba(168, 85, 247, 0.5);
+  background: linear-gradient(180deg, rgba(168, 85, 247, 0.08), var(--bg-card));
+}
+
+.table-card-reserved:hover {
+  border-color: #c084fc;
+}
+
 .table-card-vacant:hover {
   border-color: #10b981;
 }
@@ -540,6 +549,12 @@ a {
   background: rgba(16, 185, 129, 0.15);
   color: #34d399;
   border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.pill-reserved {
+  background: rgba(168, 85, 247, 0.18);
+  color: #c084fc;
+  border: 1px solid rgba(168, 85, 247, 0.4);
 }
 
 .table-capacity {

@@ -3,6 +3,7 @@ import { Table } from '../../models/Table.js';
 import { Order } from '../../models/Order.js';
 import { MenuItem } from '../../models/MenuItem.js';
 import { Category } from '../../models/Category.js';
+import { Reservation } from '../../models/Reservation.js';
 import { AuditLog } from '../../models/AuditLog.js';
 import { logAuditTrail } from '../../middleware/audit.js';
 import {
@@ -33,16 +34,19 @@ let memTables = defaultTablesData.map((t, idx) => ({
   _id: `65f02222222222222222${String(idx + 1).padStart(4, '0')}`,
   ...t,
   currentOrderId: null,
+  currentReservationId: null,
 }));
 
 let memOrders = new Map();
 let memAuditLogs = [];
+let memReservations = [];
 
 export const resetMemStore = () => {
   memTables = defaultTablesData.map((t, idx) => ({
     _id: `65f02222222222222222${String(idx + 1).padStart(4, '0')}`,
     ...t,
     currentOrderId: null,
+    currentReservationId: null,
   }));
   memOrders.clear();
   memAuditLogs = [];
@@ -72,6 +76,10 @@ export const getTables = async (req, res, next) => {
         .populate({
           path: 'currentOrderId',
           select: 'orderNumber status subTotal taxTotal grandTotal paymentStatus items createdAt orderType customerName',
+        })
+        .populate({
+          path: 'currentReservationId',
+          select: 'name phone email date time guestCount specialRequests status',
         })
         .sort({ tableNumber: 1 });
 
@@ -1047,3 +1055,162 @@ export const refundOrder = async (req, res, next) => {
     next(error);
   }
 };
+
+/**
+ * GET /api/v1/pos/reservations
+ * Fetch all customer table reservations from online booking
+ */
+export const getReservations = async (req, res, next) => {
+  try {
+    const isDbConnected = mongoose.connection.readyState === 1;
+    if (isDbConnected) {
+      const reservations = await Reservation.find()
+        .populate('tableId', 'tableNumber capacity status')
+        .sort({ date: 1, time: 1, createdAt: -1 });
+      return res.json({ success: true, data: reservations });
+    }
+    return res.json({ success: true, data: memReservations });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * PUT /api/v1/pos/reservations/:id/assign
+ * Assign a specific table to a pending reservation
+ */
+export const assignReservation = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { tableId } = req.body;
+    const isDbConnected = mongoose.connection.readyState === 1;
+
+    if (!tableId) {
+      return res.status(400).json({ success: false, message: 'Please select a table to assign' });
+    }
+
+    if (isDbConnected) {
+      const reservation = await Reservation.findById(id);
+      if (!reservation) {
+        return res.status(404).json({ success: false, message: 'Reservation not found' });
+      }
+
+      const table = await Table.findById(tableId);
+      if (!table) {
+        return res.status(404).json({ success: false, message: 'Table not found' });
+      }
+
+      // If previous table was assigned, release it
+      if (reservation.tableId && String(reservation.tableId) !== String(tableId)) {
+        await Table.findByIdAndUpdate(reservation.tableId, { status: 'vacant', currentReservationId: null });
+      }
+
+      // Update table to reserved
+      table.status = 'reserved';
+      table.currentReservationId = reservation._id;
+      await table.save();
+
+      // Update reservation
+      reservation.tableId = table._id;
+      reservation.status = 'Confirmed';
+      await reservation.save();
+
+      return res.json({
+        success: true,
+        message: `Table ${table.tableNumber} assigned to ${reservation.name}`,
+        data: { reservation, table },
+      });
+    }
+
+    // In-memory
+    const r = memReservations.find((item) => String(item._id) === String(id));
+    if (r) {
+      r.tableId = tableId;
+      r.status = 'Confirmed';
+    }
+    return res.json({ success: true, message: 'Table assigned (in-memory)' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * PUT /api/v1/pos/reservations/:id/seat
+ * Seat the guests when they arrive at the café
+ */
+export const seatReservation = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const isDbConnected = mongoose.connection.readyState === 1;
+
+    if (isDbConnected) {
+      const reservation = await Reservation.findById(id);
+      if (!reservation) {
+        return res.status(404).json({ success: false, message: 'Reservation not found' });
+      }
+
+      reservation.status = 'Seated';
+      await reservation.save();
+
+      let table = null;
+      if (reservation.tableId) {
+        table = await Table.findById(reservation.tableId);
+        if (table) {
+          table.status = 'occupied';
+          await table.save();
+        }
+      }
+
+      return res.json({
+        success: true,
+        message: `Guest ${reservation.name} seated successfully`,
+        data: { reservation, table },
+      });
+    }
+
+    return res.json({ success: true, message: 'Guest marked as seated' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * PUT /api/v1/pos/reservations/:id/cancel
+ * Cancel a table reservation and free up the table
+ */
+export const cancelReservation = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const isDbConnected = mongoose.connection.readyState === 1;
+
+    if (isDbConnected) {
+      const reservation = await Reservation.findById(id);
+      if (!reservation) {
+        return res.status(404).json({ success: false, message: 'Reservation not found' });
+      }
+
+      if (reservation.tableId) {
+        const table = await Table.findById(reservation.tableId);
+        if (table && table.status === 'reserved') {
+          table.status = 'vacant';
+          table.currentReservationId = null;
+          await table.save();
+        }
+      }
+
+      reservation.status = 'Cancelled';
+      await reservation.save();
+
+      return res.json({
+        success: true,
+        message: `Reservation for ${reservation.name} cancelled`,
+        data: reservation,
+      });
+    }
+
+    return res.json({ success: true, message: 'Reservation cancelled' });
+  } catch (error) {
+    next(error);
+  }
+};
+

@@ -23,6 +23,8 @@ import {
   Smartphone,
   CreditCard as CardIcon,
   HelpCircle,
+  CalendarCheck,
+  Calendar,
 } from 'lucide-react';
 import { posApi } from '../../services/posApi';
 
@@ -30,12 +32,13 @@ export const POSDashboard = () => {
   // State
   const [tables, setTables] = useState([]);
   const [menuCategories, setMenuCategories] = useState([]);
+  const [reservations, setReservations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
 
   // Filter & Selection
-  const [tableFilter, setTableFilter] = useState('all'); // 'all', 'vacant', 'occupied'
+  const [tableFilter, setTableFilter] = useState('all'); // 'all', 'vacant', 'occupied', 'reserved'
   const [selectedTable, setSelectedTable] = useState(null); // Table object or { isTakeaway: true }
   const [activeOrder, setActiveOrder] = useState(null); // Loaded or newly creating order
 
@@ -50,6 +53,9 @@ export const POSDashboard = () => {
 
   // Modals
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showReservationsModal, setShowReservationsModal] = useState(false);
+  const [selectedTableForAssign, setSelectedTableForAssign] = useState({});
+  const [reservationActionLoading, setReservationActionLoading] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('upi'); // 'cash', 'upi', 'card', 'split'
   const [cashTendered, setCashTendered] = useState('');
   const [splitCash, setSplitCash] = useState('');
@@ -70,13 +76,15 @@ export const POSDashboard = () => {
     try {
       setRefreshing(true);
       setError(null);
-      const [tablesRes, menuRes] = await Promise.all([
+      const [tablesRes, menuRes, reservationsRes] = await Promise.all([
         posApi.getTables(),
         posApi.getMenu(),
+        posApi.getReservations(),
       ]);
 
       if (tablesRes.success) setTables(tablesRes.data || []);
       if (menuRes.success) setMenuCategories(menuRes.data || []);
+      if (reservationsRes.success) setReservations(reservationsRes.data || []);
     } catch (err) {
       console.error('[POS Load Error]', err);
       setError('Unable to reach POS server. Retrying with fallback state...');
@@ -94,6 +102,7 @@ export const POSDashboard = () => {
   const filteredTables = useMemo(() => {
     if (tableFilter === 'vacant') return tables.filter((t) => t.status === 'vacant');
     if (tableFilter === 'occupied') return tables.filter((t) => t.status === 'occupied');
+    if (tableFilter === 'reserved') return tables.filter((t) => t.status === 'reserved');
     return tables;
   }, [tables, tableFilter]);
 
@@ -101,17 +110,19 @@ export const POSDashboard = () => {
   const stats = useMemo(() => {
     const total = tables.length;
     const occupied = tables.filter((t) => t.status === 'occupied').length;
-    const vacant = total - occupied;
-    const occupancyRate = total > 0 ? Math.round((occupied / total) * 100) : 0;
+    const reserved = tables.filter((t) => t.status === 'reserved').length;
+    const vacant = total - occupied - reserved;
+    const occupancyRate = total > 0 ? Math.round(((occupied + reserved) / total) * 100) : 0;
     const activeRevenue = tables.reduce((acc, t) => {
       if (t.currentOrderId && t.currentOrderId.grandTotal) {
         return acc + t.currentOrderId.grandTotal;
       }
       return acc;
     }, 0);
+    const pendingReservations = reservations.filter((r) => r.status === 'Pending').length;
 
-    return { total, occupied, vacant, occupancyRate, activeRevenue };
-  }, [tables]);
+    return { total, occupied, reserved, vacant, occupancyRate, activeRevenue, pendingReservations };
+  }, [tables, reservations]);
 
   // Menu items flattened & filtered
   const allMenuItems = useMemo(() => {
@@ -168,11 +179,83 @@ export const POSDashboard = () => {
       }
     }
 
+    if (table.status === 'reserved' && table.currentReservationId) {
+      const resv = table.currentReservationId;
+      setCustomerName(resv.name || '');
+      setCustomerPhone(resv.phone || '');
+      setActiveOrder(null);
+      setCartItems([]);
+      showToast(`Loaded booking for ${resv.name} (${resv.guestCount} guests)`);
+      return;
+    }
+
     // Vacant table: fresh order
     setActiveOrder(null);
     setCartItems([]);
     setCustomerName('');
     setCustomerPhone('');
+  };
+
+  // Reservation Actions
+  const handleAssignTable = async (reservationId) => {
+    const tableId = selectedTableForAssign[reservationId];
+    if (!tableId) {
+      showToast('Please select a table to assign', 'error');
+      return;
+    }
+    try {
+      setReservationActionLoading(true);
+      const res = await posApi.assignReservation(reservationId, tableId);
+      if (res.success) {
+        showToast(res.message || 'Table assigned and reserved successfully!');
+        await loadData();
+      }
+    } catch (err) {
+      showToast(err.message || 'Failed to assign table', 'error');
+    } finally {
+      setReservationActionLoading(false);
+    }
+  };
+
+  const handleSeatReservation = async (reservation) => {
+    try {
+      setReservationActionLoading(true);
+      const res = await posApi.seatReservation(reservation._id);
+      if (res.success) {
+        showToast(`Seated ${reservation.name}!`);
+        setShowReservationsModal(false);
+        await loadData();
+        const targetTable = tables.find(
+          (t) => String(t._id) === String(reservation.tableId?._id || reservation.tableId)
+        );
+        if (targetTable) {
+          setSelectedTable(targetTable);
+          setCustomerName(reservation.name || '');
+          setCustomerPhone(reservation.phone || '');
+          setActiveOrder(null);
+          setCartItems([]);
+        }
+      }
+    } catch (err) {
+      showToast(err.message || 'Failed to seat guests', 'error');
+    } finally {
+      setReservationActionLoading(false);
+    }
+  };
+
+  const handleCancelReservation = async (reservationId) => {
+    try {
+      setReservationActionLoading(true);
+      const res = await posApi.cancelReservation(reservationId);
+      if (res.success) {
+        showToast('Reservation cancelled');
+        await loadData();
+      }
+    } catch (err) {
+      showToast(err.message || 'Failed to cancel reservation', 'error');
+    } finally {
+      setReservationActionLoading(false);
+    }
   };
 
   // Launch Takeaway Order
@@ -482,13 +565,37 @@ export const POSDashboard = () => {
               <span className="stat-value">
                 {stats.occupied} / {stats.total}
               </span>
-              <span className="stat-badge">{stats.occupancyRate}% Occupancy</span>
+              <span className="stat-badge">{stats.occupancyRate}% Floor Active</span>
             </div>
             <div className="stat-card">
               <span className="stat-label">Vacant Ready</span>
               <span className="stat-value">{stats.vacant}</span>
               <span className="stat-badge" style={{ color: 'var(--success)' }}>
                 Ready to Seat
+              </span>
+            </div>
+            <div
+              className="stat-card"
+              style={{
+                cursor: 'pointer',
+                border: stats.pendingReservations > 0 ? '1px solid #d97706' : '1px solid var(--border-color)',
+                background: stats.pendingReservations > 0 ? 'linear-gradient(180deg, rgba(217, 119, 6, 0.1), var(--bg-card))' : 'var(--bg-card)',
+              }}
+              onClick={() => setShowReservationsModal(true)}
+              title="Click to view online table bookings"
+            >
+              <span className="stat-label">Online Bookings</span>
+              <span className="stat-value" style={{ color: stats.pendingReservations > 0 ? '#fbbf24' : 'inherit' }}>
+                {reservations.length} Bookings
+              </span>
+              <span
+                className="stat-badge"
+                style={{
+                  color: stats.pendingReservations > 0 ? '#fbbf24' : 'var(--text-secondary)',
+                  fontWeight: stats.pendingReservations > 0 ? 700 : 'normal',
+                }}
+              >
+                {stats.pendingReservations > 0 ? `⚡ ${stats.pendingReservations} New to Assign` : 'All Managed'}
               </span>
             </div>
             <div className="stat-card">
@@ -519,9 +626,43 @@ export const POSDashboard = () => {
               >
                 Occupied ({stats.occupied})
               </button>
+              <button
+                className={`filter-btn ${tableFilter === 'reserved' ? 'active' : ''}`}
+                onClick={() => setTableFilter('reserved')}
+              >
+                Reserved ({stats.reserved})
+              </button>
             </div>
 
-            <div style={{ display: 'flex', gap: '10px' }}>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+              <button
+                className="btn-primary"
+                style={{
+                  background: stats.pendingReservations > 0 ? 'linear-gradient(135deg, #d97706, #b45309)' : 'var(--bg-surface)',
+                  color: '#fff',
+                  border: '1px solid var(--border-color)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                }}
+                onClick={() => setShowReservationsModal(true)}
+              >
+                <CalendarCheck size={16} />
+                <span>Online Bookings</span>
+                {reservations.length > 0 && (
+                  <span
+                    style={{
+                      background: stats.pendingReservations > 0 ? '#ef4444' : 'rgba(255,255,255,0.2)',
+                      padding: '2px 8px',
+                      borderRadius: '12px',
+                      fontSize: '0.74rem',
+                      fontWeight: 700,
+                    }}
+                  >
+                    {stats.pendingReservations > 0 ? `${stats.pendingReservations} New` : reservations.length}
+                  </span>
+                )}
+              </button>
               <button
                 className="btn-secondary"
                 onClick={loadData}
@@ -542,12 +683,16 @@ export const POSDashboard = () => {
           <div className="pos-table-grid">
             {filteredTables.map((table) => {
               const isOccupied = table.status === 'occupied';
+              const isReserved = table.status === 'reserved';
               const order = table.currentOrderId;
+              const reservation = table.currentReservationId;
 
               return (
                 <div
                   key={table._id}
-                  className={`table-card ${isOccupied ? 'table-card-occupied' : 'table-card-vacant'}`}
+                  className={`table-card ${
+                    isOccupied ? 'table-card-occupied' : isReserved ? 'table-card-reserved' : 'table-card-vacant'
+                  }`}
                   onClick={() => handleSelectTable(table)}
                 >
                   <div className="table-card-header">
@@ -557,10 +702,10 @@ export const POSDashboard = () => {
                     </div>
                     <span
                       className={`status-pill ${
-                        isOccupied ? 'pill-occupied' : 'pill-vacant'
+                        isOccupied ? 'pill-occupied' : isReserved ? 'pill-reserved' : 'pill-vacant'
                       }`}
                     >
-                      {isOccupied ? 'Occupied' : 'Vacant'}
+                      {isOccupied ? 'Occupied' : isReserved ? 'Reserved' : 'Vacant'}
                     </span>
                   </div>
 
@@ -577,6 +722,22 @@ export const POSDashboard = () => {
                       </div>
                       <div className="order-meta">
                         {order.items?.length || 0} items • Running
+                      </div>
+                    </div>
+                  ) : isReserved ? (
+                    <div className="table-order-preview">
+                      <div className="order-chip" style={{ color: '#c084fc' }}>
+                        {reservation?.name || 'Customer Booking'}
+                      </div>
+                      <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#fff' }}>
+                        {reservation?.guestCount || 2} Guests • {reservation?.time || 'Reserved'}
+                      </div>
+                      <div className="order-meta" style={{ color: 'var(--text-muted)' }}>
+                        📞 {reservation?.phone || ''}
+                      </div>
+                      <div className="table-vacant-hint" style={{ color: '#c084fc', paddingTop: '6px' }}>
+                        <span>Click to Seat & Order</span>
+                        <ChevronRight size={16} />
                       </div>
                     </div>
                   ) : (
@@ -1134,6 +1295,188 @@ export const POSDashboard = () => {
               <button className="btn-primary" onClick={() => window.print()}>
                 <Printer size={16} />
                 <span>Print Bill</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Online Table Reservations Manager Modal */}
+      {showReservationsModal && (
+        <div className="pos-modal-overlay">
+          <div className="pos-modal-card" style={{ maxWidth: '780px' }}>
+            <div className="modal-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <CalendarCheck size={22} style={{ color: 'var(--accent)' }} />
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.2rem' }}>Online Table Bookings</h3>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                    Incoming customer reservations submitted via customer website
+                  </span>
+                </div>
+              </div>
+              <button className="modal-close-btn" onClick={() => setShowReservationsModal(false)}>
+                <X size={18} />
+              </button>
+            </div>
+
+            {reservations.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-muted)' }}>
+                <Calendar size={48} style={{ opacity: 0.3, marginBottom: '12px' }} />
+                <p>No table reservations found yet.</p>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', maxHeight: '65vh', overflowY: 'auto', paddingRight: '4px' }}>
+                {reservations.map((resv) => {
+                  const isPending = resv.status === 'Pending';
+                  const isConfirmed = resv.status === 'Confirmed';
+                  const isSeated = resv.status === 'Seated';
+                  const isCancelled = resv.status === 'Cancelled';
+                  const assignedTable = tables.find(
+                    (t) => String(t._id) === String(resv.tableId?._id || resv.tableId)
+                  );
+
+                  return (
+                    <div
+                      key={resv._id}
+                      style={{
+                        background: 'var(--bg-card)',
+                        border: isPending ? '1px solid #d97706' : isConfirmed ? '1px solid #c084fc' : '1px solid var(--border-color)',
+                        borderRadius: '12px',
+                        padding: '16px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '12px',
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '8px' }}>
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <h4 style={{ fontSize: '1.1rem', fontWeight: 700, margin: 0 }}>{resv.name}</h4>
+                            <span
+                              style={{
+                                fontSize: '0.74rem',
+                                fontWeight: 700,
+                                padding: '3px 10px',
+                                borderRadius: '12px',
+                                textTransform: 'uppercase',
+                                background:
+                                  isPending
+                                    ? 'rgba(217, 119, 6, 0.2)'
+                                    : isConfirmed
+                                    ? 'rgba(168, 85, 247, 0.2)'
+                                    : isSeated
+                                    ? 'rgba(16, 185, 129, 0.2)'
+                                    : 'rgba(239, 68, 68, 0.2)',
+                                color:
+                                  isPending
+                                    ? '#fbbf24'
+                                    : isConfirmed
+                                    ? '#c084fc'
+                                    : isSeated
+                                    ? '#34d399'
+                                    : '#f87171',
+                              }}
+                            >
+                              {resv.status}
+                            </span>
+                          </div>
+                          <div style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', marginTop: '4px', display: 'flex', gap: '14px', flexWrap: 'wrap' }}>
+                            <span>📞 <a href={`tel:${resv.phone}`} style={{ color: 'var(--accent)' }}>{resv.phone}</a></span>
+                            {resv.email && <span>✉️ {resv.email}</span>}
+                          </div>
+                        </div>
+
+                        <div style={{ textAlign: 'right', fontSize: '0.86rem' }}>
+                          <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>
+                            📅 {resv.date} at ⏰ {resv.time}
+                          </div>
+                          <div style={{ color: 'var(--text-secondary)', marginTop: '2px' }}>
+                            👥 {resv.guestCount} Guest{resv.guestCount > 1 ? 's' : ''}
+                          </div>
+                        </div>
+                      </div>
+
+                      {resv.specialRequests && (
+                        <div style={{ fontSize: '0.82rem', background: 'rgba(0,0,0,0.2)', padding: '8px 12px', borderRadius: '6px', color: 'var(--text-muted)' }}>
+                          <strong>Special Request:</strong> {resv.specialRequests}
+                        </div>
+                      )}
+
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', paddingTop: '8px', borderTop: '1px solid var(--border-subtle)' }}>
+                        <div style={{ fontSize: '0.85rem' }}>
+                          <span style={{ color: 'var(--text-muted)' }}>Assigned Table: </span>
+                          <strong style={{ color: assignedTable ? '#c084fc' : '#f59e0b' }}>
+                            {assignedTable ? `Table ${assignedTable.tableNumber} (${assignedTable.capacity} seats)` : 'None (Action Required)'}
+                          </strong>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                          {isPending && (
+                            <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                              <select
+                                className="form-select"
+                                style={{ padding: '6px 10px', fontSize: '0.84rem', minWidth: '140px' }}
+                                value={selectedTableForAssign[resv._id] || ''}
+                                onChange={(e) =>
+                                  setSelectedTableForAssign({
+                                    ...selectedTableForAssign,
+                                    [resv._id]: e.target.value,
+                                  })
+                                }
+                              >
+                                <option value="">Select Table...</option>
+                                {tables
+                                  .filter((t) => t.status === 'vacant')
+                                  .map((t) => (
+                                    <option key={t._id} value={t._id}>
+                                      Table {t.tableNumber} ({t.capacity} seats)
+                                    </option>
+                                  ))}
+                              </select>
+                              <button
+                                className="btn-primary"
+                                style={{ padding: '6px 12px', fontSize: '0.84rem' }}
+                                disabled={reservationActionLoading}
+                                onClick={() => handleAssignTable(resv._id)}
+                              >
+                                Confirm & Reserve Table
+                              </button>
+                            </div>
+                          )}
+
+                          {isConfirmed && (
+                            <button
+                              className="btn-primary"
+                              style={{ padding: '6px 14px', fontSize: '0.84rem', background: 'var(--success)' }}
+                              disabled={reservationActionLoading}
+                              onClick={() => handleSeatReservation(resv)}
+                            >
+                              Seat Guests Now
+                            </button>
+                          )}
+
+                          {!isCancelled && !isSeated && (
+                            <button
+                              className="btn-secondary"
+                              style={{ padding: '6px 10px', fontSize: '0.82rem', color: 'var(--danger)' }}
+                              disabled={reservationActionLoading}
+                              onClick={() => handleCancelReservation(resv._id)}
+                            >
+                              Cancel
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            <div className="modal-actions" style={{ marginTop: '16px' }}>
+              <button className="btn-secondary" onClick={() => setShowReservationsModal(false)}>
+                Close
               </button>
             </div>
           </div>

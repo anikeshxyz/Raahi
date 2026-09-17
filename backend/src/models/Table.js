@@ -23,6 +23,11 @@ const tableSchema = new mongoose.Schema(
       ref: 'Order',
       default: null,
     },
+    currentReservationId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Reservation',
+      default: null,
+    },
     qrCodeUrl: {
       type: String,
       default: '',

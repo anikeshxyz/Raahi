@@ -72,4 +72,41 @@ export const posApi = {
     if (!res.ok) throw new Error(data.message || 'Failed to cancel order');
     return data;
   },
+
+  async getReservations() {
+    const res = await fetch(`${API_BASE}/reservations`);
+    if (!res.ok) throw new Error('Failed to fetch table reservations');
+    return res.json();
+  },
+
+  async assignReservation(reservationId, tableId) {
+    const res = await fetch(`${API_BASE}/reservations/${reservationId}/assign`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tableId }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Failed to assign table');
+    return data;
+  },
+
+  async seatReservation(reservationId) {
+    const res = await fetch(`${API_BASE}/reservations/${reservationId}/seat`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Failed to mark reservation as seated');
+    return data;
+  },
+
+  async cancelReservation(reservationId) {
+    const res = await fetch(`${API_BASE}/reservations/${reservationId}/cancel`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Failed to cancel reservation');
+    return data;
+  },
 };

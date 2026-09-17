@@ -11,6 +11,10 @@ import {
   settleOrder,
   cancelOrder,
   refundOrder,
+  getReservations,
+  assignReservation,
+  seatReservation,
+  cancelReservation,
 } from './controller.js';
 
 const router = Router();
@@ -22,6 +26,7 @@ router.get('/', (req, res) => {
     status: 'ready',
     endpoints: [
       '/tables',
+      '/reservations',
       '/menu',
       '/orders',
       '/orders/:id',
@@ -37,6 +42,12 @@ router.get('/', (req, res) => {
 // Table Management
 router.get('/tables', getTables);
 router.put('/tables/:id/status', updateTableStatus);
+
+// Online Table Reservations
+router.get('/reservations', getReservations);
+router.put('/reservations/:id/assign', assignReservation);
+router.put('/reservations/:id/seat', seatReservation);
+router.put('/reservations/:id/cancel', cancelReservation);
 
 // POS Menu
 router.get('/menu', getPosMenu);

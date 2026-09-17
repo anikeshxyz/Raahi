@@ -146,6 +146,23 @@ export const createReservation = async (req, res, next) => {
 };
 
 /**
+ * GET /api/v1/website-cms/reservations
+ * Lists customer reservations
+ */
+export const getReservations = async (req, res, next) => {
+  try {
+    const isDbConnected = mongoose.connection.readyState === 1;
+    if (isDbConnected) {
+      const list = await Reservation.find().sort({ createdAt: -1 });
+      return res.json({ success: true, data: list });
+    }
+    return res.json({ success: true, data: [] });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
  * POST /api/v1/website-cms/inquiries
  * Submits an event or general contact inquiry
  */
