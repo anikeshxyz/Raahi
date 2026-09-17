@@ -71,7 +71,7 @@ export default function AboutPage() {
       </section>
 
       {/* Coffee Origin Spotlight */}
-      <section className="card" style={{ padding: '40px', marginBottom: '64px', background: 'linear-gradient(135deg, var(--bg-card), #2a1f18)' }}>
+      <section className="card" style={{ padding: 'clamp(20px, 4vw, 40px)', marginBottom: '64px', background: 'linear-gradient(135deg, var(--bg-card), #2a1f18)' }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '28px' }}>
           <div>
             <span className="badge-tag">Origin Spotlight</span>

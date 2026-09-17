@@ -145,7 +145,7 @@ export default function HomePage() {
             </Link>
           </div>
 
-          <div className="responsive-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))' }}>
+          <div className="responsive-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))' }}>
             {popularItems.map((item) => (
               <div key={item.name} className="card" style={{ padding: 0, overflow: 'hidden' }}>
                 <div style={{ height: '190px', width: '100%', position: 'relative', overflow: 'hidden' }}>
@@ -173,7 +173,7 @@ export default function HomePage() {
         </section>
 
         {/* Current Offers Highlight */}
-        <section style={{ marginBottom: '80px', background: 'linear-gradient(135deg, rgba(217, 119, 6, 0.1), rgba(20, 16, 13, 0.8))', border: '1px solid var(--border-focus)', borderRadius: 'var(--radius-lg)', padding: '40px 28px' }}>
+        <section style={{ marginBottom: '80px', background: 'linear-gradient(135deg, rgba(217, 119, 6, 0.1), rgba(20, 16, 13, 0.8))', border: '1px solid var(--border-focus)', borderRadius: 'var(--radius-lg)', padding: 'clamp(20px, 4vw, 40px) clamp(16px, 3vw, 28px)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '24px' }}>
             <div>
               <span className="badge-tag" style={{ background: 'var(--accent)', color: '#000' }}>Limited Time Combo</span>
@@ -221,7 +221,7 @@ export default function HomePage() {
         </section>
 
         {/* Location & Reservation CTA */}
-        <section className="card" style={{ padding: '40px 32px', textAlign: 'center' }}>
+        <section className="card" style={{ padding: 'clamp(24px, 4vw, 40px) clamp(16px, 3vw, 32px)', textAlign: 'center' }}>
           <span className="badge-tag">Visit Us Today</span>
           <h2 className="section-title" style={{ marginBottom: '12px' }}>A Warm Seat is Waiting for You</h2>
           <p className="section-subtitle" style={{ marginBottom: '28px' }}>

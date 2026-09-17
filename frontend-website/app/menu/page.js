@@ -175,7 +175,7 @@ export default function MenuPage() {
         </div>
       ) : (
         /* Menu Grid */
-        <div className="responsive-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
+        <div className="responsive-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))' }}>
           {filteredItems.map((item) => (
             <div key={item._id || item.name} className="card" style={{ display: 'flex', flexDirection: 'column', padding: '0', overflow: 'hidden' }}>
               {item.imageUrl && (
@@ -207,7 +207,7 @@ export default function MenuPage() {
                   </p>
                 </div>
 
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '14px', borderTop: '1px solid var(--border)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', paddingTop: '14px', borderTop: '1px solid var(--border)' }}>
                   <span style={{ fontSize: '0.76rem', color: 'var(--text-subtle)' }}>
                     +5% GST Applicable
                   </span>
@@ -225,7 +225,7 @@ export default function MenuPage() {
       )}
 
       {/* Footer Banner */}
-      <div className="card" style={{ textAlign: 'center', marginTop: '64px', padding: '36px' }}>
+      <div className="card" style={{ textAlign: 'center', marginTop: '64px', padding: 'clamp(20px, 4vw, 36px)' }}>
         <h3 style={{ fontSize: '1.4rem', fontWeight: 700, marginBottom: '8px' }}>Have Dietary Inquiries or Custom Roast Preferences?</h3>
         <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem', marginBottom: '20px' }}>
           Our baristas and culinary team are glad to accommodate dairy alternatives (Oat, Almond, Soy) and gluten-sensitive requests.

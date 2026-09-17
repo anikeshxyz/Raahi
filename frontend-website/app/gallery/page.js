@@ -112,7 +112,7 @@ export default function GalleryPage() {
       </div>
 
       {/* Gallery Grid */}
-      <div className="responsive-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}>
+      <div className="responsive-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))' }}>
         {filteredItems.map((item) => (
           <div
             key={item.id}

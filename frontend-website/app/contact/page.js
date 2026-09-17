@@ -112,7 +112,7 @@ export default function ContactPage() {
         </div>
 
         {/* Send Message Form */}
-        <div className="card" style={{ padding: '32px' }}>
+        <div className="card" style={{ padding: 'clamp(18px, 4vw, 32px)' }}>
           <h3 style={{ fontSize: '1.35rem', fontWeight: 700, marginBottom: '8px' }}>Send Us a Message</h3>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', marginBottom: '24px' }}>
             Fill out the form and our guest relations team will get back to you within a few hours.

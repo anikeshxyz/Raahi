@@ -4574,7 +4574,11 @@ a {
   }
 
   .modal-content,
+  .modal-dialog,
+  .po-modal-size,
+  .pos-modal-card,
   .pos-modal-content,
+  .receipt-modal,
   .inv-modal,
   .employee-modal-box,
   .purchase-modal {
@@ -4596,17 +4600,55 @@ a {
   .table-responsive,
   .reports-table-card,
   .inventory-table-container,
+  .inv-table-wrapper,
+  .po-items-table-wrap,
+  .grn-items-table-wrap,
   .employee-table-container {
-    width: 100%;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
+    width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
   }
 
   .reports-table,
   .inv-table,
   .emp-table,
-  .purchase-table {
-    min-width: 600px;
+  .purchase-table,
+  .po-line-items-table,
+  .grn-table {
+    min-width: 550px;
+  }
+
+  /* Inventory & Purchase Mobile Adjustments */
+  .inventory-toolbar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+  }
+
+  .inv-category-pills {
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 4px;
+  }
+
+  /* KDS Kitchen Ticket Grid & Controls on Mobile */
+  .kds-controls-bar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+  }
+
+  .kds-station-tabs {
+    overflow-x: auto !important;
+    white-space: nowrap !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding-bottom: 4px;
+    width: 100%;
+  }
+
+  .kds-tickets-grid {
+    grid-template-columns: 1fr !important;
   }
 
   /* KPI Grids on Mobile */
