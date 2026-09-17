@@ -527,3 +527,57 @@ a {
     grid-template-columns: repeat(3, 1fr);
   }
 }
+
+/* Mobile Screens (<= 768px) */
+@media (max-width: 768px) {
+  .quick-action-bar {
+    bottom: 12px;
+    left: 12px;
+    right: 12px;
+    flex-direction: row;
+    gap: 8px;
+    background: rgba(26, 15, 10, 0.94);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid var(--border);
+    padding: 6px;
+    border-radius: 9999px;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.55);
+  }
+
+  .action-fab {
+    flex: 1;
+    justify-content: center;
+    padding: 9px 6px;
+    font-size: 0.78rem;
+    border-radius: 20px;
+    box-shadow: none;
+  }
+
+  .page-container {
+    padding: 24px 16px 88px; /* Extra bottom padding to clear the mobile floating dock */
+  }
+
+  .hero-wrapper {
+    padding: 50px 16px 40px;
+    min-height: 55vh;
+  }
+
+  .nav-cta {
+    padding: 8px 12px;
+    font-size: 0.82rem;
+  }
+
+  .brand-name {
+    font-size: 1.15rem;
+  }
+
+  .brand-tagline {
+    display: none;
+  }
+
+  .footer {
+    padding: 40px 16px 96px; /* Extra space to avoid overlap with floating mobile bar */
+  }
+}
+

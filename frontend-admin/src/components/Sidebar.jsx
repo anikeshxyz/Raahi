@@ -8,10 +8,11 @@ import {
   BarChart3, 
   LogOut,
   CookingPot,
-  Truck
+  Truck,
+  X
 } from 'lucide-react';
 
-export const Sidebar = () => {
+export const Sidebar = ({ isOpen = false, onClose = () => {} }) => {
   const navItems = [
     { to: '/pos', label: 'POS & Tables', icon: UtensilsCrossed },
     { to: '/kot', label: 'KDS / Kitchen', icon: CookingPot },
@@ -22,45 +23,67 @@ export const Sidebar = () => {
   ];
 
   return (
-    <aside className="sidebar">
-      <div className="sidebar-brand">
-        <div className="brand-badge">
-          <Coffee size={22} />
-        </div>
-        <div className="brand-text">
-          <h1>Raahi Café</h1>
-          <span>Operations Suite</span>
-        </div>
-      </div>
+    <>
+      {/* Mobile Backdrop Overlay */}
+      <div 
+        className={`sidebar-backdrop ${isOpen ? 'active' : ''}`}
+        onClick={onClose}
+        aria-hidden="true"
+      />
 
-      <ul className="nav-links">
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          return (
-            <li key={item.to} className="nav-item">
-              <NavLink 
-                to={item.to} 
-                className={({ isActive }) => (isActive ? 'active' : '')}
-              >
-                <Icon size={18} />
-                <span>{item.label}</span>
-              </NavLink>
-            </li>
-          );
-        })}
-      </ul>
-
-      <div className="sidebar-footer">
-        <div className="user-profile">
-          <div className="user-meta">
-            <span className="user-name">Manager On Duty</span>
-            <span className="user-role">Owner / Admin</span>
+      <aside className={`sidebar ${isOpen ? 'mobile-open' : ''}`}>
+        <div className="sidebar-brand">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div className="brand-badge">
+              <Coffee size={22} />
+            </div>
+            <div className="brand-text">
+              <h1>Raahi Café</h1>
+              <span>Operations Suite</span>
+            </div>
           </div>
-          <NavLink to="/login" title="Logout" style={{ color: '#ef4444', display: 'flex' }}>
-            <LogOut size={16} />
-          </NavLink>
+
+          {/* Mobile Close Button */}
+          <button 
+            type="button"
+            className="sidebar-close-btn"
+            onClick={onClose}
+            aria-label="Close menu"
+          >
+            <X size={20} />
+          </button>
         </div>
-      </div>
-    </aside>
+
+        <ul className="nav-links">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <li key={item.to} className="nav-item">
+                <NavLink 
+                  to={item.to} 
+                  className={({ isActive }) => (isActive ? 'active' : '')}
+                  onClick={onClose}
+                >
+                  <Icon size={18} />
+                  <span>{item.label}</span>
+                </NavLink>
+              </li>
+            );
+          })}
+        </ul>
+
+        <div className="sidebar-footer">
+          <div className="user-profile">
+            <div className="user-meta">
+              <span className="user-name">Manager On Duty</span>
+              <span className="user-role">Owner / Admin</span>
+            </div>
+            <NavLink to="/login" title="Logout" style={{ color: '#ef4444', display: 'flex' }} onClick={onClose}>
+              <LogOut size={16} />
+            </NavLink>
+          </div>
+        </div>
+      </aside>
+    </>
   );
 };

@@ -46,6 +46,7 @@ export const POSDashboard = () => {
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [discountAmount, setDiscountAmount] = useState(0);
+  const [isMobileCartOpen, setIsMobileCartOpen] = useState(false);
 
   // Modals
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -677,18 +678,46 @@ export const POSDashboard = () => {
                 </div>
               ))}
             </div>
+            {/* Mobile Floating Cart Action Bar */}
+            {cartItems.length > 0 && (
+              <div className="pos-mobile-cart-bar">
+                <div className="cart-bar-info">
+                  <span className="cart-bar-count">{cartItems.reduce((acc, i) => acc + i.quantity, 0)} Items Added</span>
+                  <span className="cart-bar-total">₹{cartGrandTotal.toLocaleString('en-IN')}</span>
+                </div>
+                <button
+                  type="button"
+                  className="cart-bar-action-btn"
+                  onClick={() => setIsMobileCartOpen(true)}
+                >
+                  <ShoppingBag size={18} />
+                  <span>Review Bill ({cartItems.reduce((acc, i) => acc + i.quantity, 0)})</span>
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Right Column: Live Order Ticket & Billing Console */}
-          <div className="pos-cart-section">
+          <div className={`pos-cart-section ${isMobileCartOpen ? 'mobile-cart-open' : ''}`}>
             <div className="cart-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <FileText size={18} color="var(--primary)" />
                 <h3 style={{ fontSize: '1.05rem', fontWeight: 700 }}>Current Bill</h3>
               </div>
-              <span className="item-count-badge">
-                {cartItems.reduce((acc, i) => acc + i.quantity, 0)} Items
-              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span className="item-count-badge">
+                  {cartItems.reduce((acc, i) => acc + i.quantity, 0)} Items
+                </span>
+                <button
+                  type="button"
+                  className="cart-close-mobile-btn"
+                  onClick={() => setIsMobileCartOpen(false)}
+                  title="Minimize cart"
+                  aria-label="Close cart sheet"
+                >
+                  <X size={18} />
+                </button>
+              </div>
             </div>
 
             {/* Customer Details */}
